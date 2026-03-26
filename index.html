@@ -771,7 +771,63 @@
             </div>
           );
         }
+          // --- UPDATED COMPLETE LEVEL LOGIC ---
+          const completeLevel = () => {
+            playWinSound(); 
+            setHint(""); 
+            setClicks(0);
+            setInputValue("");
+            setIsNight(false);
+            setIsGreen(false);
 
+            if (levelIndex >= 25) {
+              if (!finaleClaimed) {
+                setPopup({ title: "Congratulations!", message: "Congrats you completed all stages! Rewards: 10 keys." });
+                setKeys(prev => prev + 10);
+                setFinaleClaimed(true);
+                localStorage.setItem('puzzle_finale_claimed', 'true');
+              }
+              setLevelIndex(1); 
+              setScene('menu'); 
+              return;
+            }
+
+            // Logic to trigger Ads after winning Level 6 or higher
+            if (levelIndex >= 6) {
+                showAppCreatorAd();
+            }
+
+            setLevelIndex(prev => prev + 1);
+          };
+
+          // --- UPDATED AD BRIDGE FOR APPCREATOR24 ---
+          const showAppCreatorAd = () => {
+            // Check if the AppCreator24 bridge exists
+            if (typeof parent.showInterstital !== 'undefined') {
+                parent.showInterstital(); // Standard AppCreator24 function
+            } else if (typeof showInterstital !== 'undefined') {
+                showInterstital();
+            } else {
+                // Fallback for browser testing (the simulated ad)
+                displayAd('interstitial');
+                console.log("AppCreator24 bridge not detected. Showing simulated ad.");
+            }
+          };
+
+          const displayAd = (type) => {
+            // ... (keep your existing simulated displayAd code here for testing)
+            setAdInfo({ show: true, type: type, timer: 3 });
+            const interval = setInterval(() => {
+              setAdInfo(prev => {
+                if (prev.timer <= 1) {
+                  clearInterval(interval);
+                  return { ...prev, timer: 0 };
+                }
+                return { ...prev, timer: prev.timer - 1 };
+              });
+            }, 1000);
+          };
+        
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
