@@ -9,7 +9,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #f3f4f6; }
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
         #root { height: 100vh; width: 100vw; }
     </style>
 </head>
@@ -60,18 +60,12 @@
           );
         };
 
-        // --- Main App Component ---
         function App() {
           const [scene, setScene] = useState('menu'); 
           const [keys, setKeys] = useState(5);
           const [levelIndex, setLevelIndex] = useState(1);
-          const [lastRewardTime, setLastRewardTime] = useState(Date.now());
-          const [isOnline, setIsOnline] = useState(navigator.onLine);
-          const [adInfo, setAdInfo] = useState({ show: false, type: null, timer: 0 });
-          const [adsWatchedToday, setAdsWatchedToday] = useState(0);
           const [popup, setPopup] = useState(null); 
           const [hint, setHint] = useState("");
-          const [isMuted, setIsMuted] = useState(false);
           const [clicks, setClicks] = useState(0);
           const [inputValue, setInputValue] = useState("");
           const [isNight, setIsNight] = useState(false);
@@ -79,7 +73,29 @@
 
           const levelHints = {
             1: "Move the yellow box away using your finger.",
+            2: "Think about real life size, not picture size.",
+            3: "Owls sleep during the day. Can you make the sun go down?",
+            4: "Look closely at the instruction text itself.",
+            5: "The clouds look fluffy. Maybe you can move them out of the way?",
+            6: "It says put 'everything' in the box. Does that include the instructions?",
+            7: "The button might try to trick you. Count carefully!",
+            8: "Drag the bone to the dog.",
+            9: "A period is a tiny circle. Look at the end of the sentence.",
+            10: "Make the sun disappear completely off the screen.",
+            11: "Maybe one apple is hiding behind another apple?",
+            12: "You can change the answer. Tap the number 5.",
+            13: "Just throw the elephant entirely off your screen.",
+            14: "Drag the door to the right to open it.",
+            15: "Blue and Yellow make Green. Drag the blue circle completely over the yellow one.",
             16: "Wake the cat up by tapping it multiple times.",
+            17: "The coin isn't in his hands. Try clicking his pocket.",
+            18: "Water puts out fire. Drag the rain cloud over the fire.",
+            19: "Drag the police officer to the thief.",
+            20: "The fridge is too small for a real giraffe. Put the *word* giraffe inside.",
+            21: "Drag the boat to the other side of the screen.",
+            22: "Plug it in first! Drag the plug to the socket, then turn it on.",
+            23: "99 is the largest number, even if it looks small.",
+            24: "Drag the word 'game' to the finish line.",
             25: "Look at the level number at the top of your screen."
           };
 
@@ -92,11 +108,6 @@
             setLevelIndex(prev => prev + 1);
           };
 
-          const handleCloseAd = () => {
-            if (adInfo.type === 'rewarded') { setKeys(k => k + 2); setAdsWatchedToday(a => a + 1); }
-            setAdInfo({ show: false, type: null, timer: 0 });
-          };
-
           const renderCurrentLevel = () => {
             switch (levelIndex) {
               case 1: return (
@@ -106,20 +117,201 @@
                   <Draggable className="top-1/2 left-1/2 -mt-16 -ml-16"><div className="w-32 h-32 bg-yellow-400 border-4 border-black rounded-xl flex items-center justify-center font-black">BOX</div></Draggable>
                 </>
               );
+              case 2: return (
+                <div className="flex flex-col items-center justify-start h-full pt-4 w-full">
+                  <div className="text-center w-full text-black font-black text-xl mb-10">Which is the biggest?</div>
+                  <div className="flex justify-around w-full px-4 items-end space-x-4">
+                    <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the correct answer."})} className="text-6xl cursor-pointer">🍎</div>
+                    <div onClick={completeLevel} className="text-3xl cursor-pointer">🍉</div>
+                    <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the correct answer."})} className="text-8xl cursor-pointer">🍓</div>
+                  </div>
+                </div>
+              );
+              case 3: return (
+                <div className={`w-full h-full flex items-center justify-center transition-colors duration-1000 ${isNight ? 'bg-gray-800' : 'bg-transparent'}`}>
+                  <div className={`absolute text-center top-4 w-full font-black text-xl ${isNight ? 'text-white' : 'text-black'}`}>Wake up the owl</div>
+                  <Draggable onDrag={(pos) => setIsNight(pos.y > 150)} className="absolute top-16 right-10"><div className="text-6xl">☀️</div></Draggable>
+                  <div onClick={() => isNight ? completeLevel() : setPopup({ title: "Nope!", message: "Nothing happened."})} className="absolute bottom-16 text-6xl cursor-pointer">{isNight ? '🦉' : '💤'}</div>
+                </div>
+              );
+              case 4: return (
+                <div className="flex flex-col items-center justify-start h-full pt-4 w-full">
+                  <div className="text-center w-full text-black font-bold text-xl mb-10">Find the <span onClick={completeLevel} className="text-black font-black cursor-pointer underline">darkest color</span> on screen!</div>
+                  <div className="flex justify-around w-full px-4 mt-8">
+                    <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the darkest color."})} className="w-16 h-16 bg-blue-800 border-4 border-black rounded-full cursor-pointer"></div>
+                    <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the darkest color."})} className="w-16 h-16 bg-gray-800 border-4 border-black rounded-full cursor-pointer"></div>
+                  </div>
+                </div>
+              );
+              case 5: return (
+                <div className="w-full h-full relative">
+                  <div className="absolute text-center top-4 w-full text-black font-black text-xl pointer-events-none">Find the hidden star</div>
+                  <div onClick={completeLevel} className="absolute text-5xl cursor-pointer top-1/2 left-1/2 -mt-6 -ml-6">⭐</div>
+                  <Draggable className="absolute top-1/2 left-1/2 -mt-12 -ml-16"><div className="text-8xl">☁️</div></Draggable>
+                  <Draggable className="absolute top-1/2 left-1/2 -mt-10 -ml-8"><div className="text-8xl">☁️</div></Draggable>
+                </div>
+              );
+              case 6: return (
+                <div className="flex flex-col items-center justify-center h-full w-full relative">
+                  <Draggable onDragEnd={(p) => p.y > 100 && setClicks(prev => prev + 1)} className="absolute top-4 w-full flex justify-center"><div className="text-xl font-black text-black bg-white px-2 border-2 border-black rounded">Put everything in the box</div></Draggable>
+                  <div className="absolute bottom-10 w-32 h-32 border-4 border-dashed border-black bg-gray-100 rounded-xl flex items-center justify-center text-black font-black">{clicks >= 3 ? completeLevel() : 'BOX'}</div>
+                  <Draggable onDragEnd={(p) => p.y > 100 && setClicks(prev => prev + 1)} className="absolute top-20 left-10"><div className="text-4xl">🍎</div></Draggable>
+                  <Draggable onDragEnd={(p) => p.y > 100 && setClicks(prev => prev + 1)} className="absolute top-20 right-10"><div className="text-4xl">🍌</div></Draggable>
+                </div>
+              );
+              case 7: return (
+                <div className="flex flex-col items-center justify-center h-full w-full">
+                  <div className="absolute text-center top-4 w-full text-black font-black text-xl">Tap button 5 times</div>
+                  <div className="text-5xl font-black mb-8">{clicks}</div>
+                  <button onClick={() => { setClicks(c => c + 1); if (clicks === 4) completeLevel(); }} className={`px-10 py-4 font-black text-2xl rounded-2xl border-4 border-black ${clicks === 3 ? 'bg-red-500 text-white ml-24' : 'bg-cyan-400 text-black'}`}>TAP ME</button>
+                </div>
+              );
+              case 8: return (
+                <div className="flex items-center justify-center h-full relative w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Feed the dog</div>
+                  <Draggable onDragEnd={(p) => { if (p.x > 80) completeLevel(); return true; }} className="absolute left-10"><div className="text-5xl">🦴</div></Draggable>
+                  <div className="absolute right-10 text-6xl">🐕</div>
+                </div>
+              );
+              case 9: return (
+                <div className="flex items-center justify-center h-full w-full">
+                  <h1 className="text-2xl font-black text-black text-center">Find the circle<span onClick={completeLevel} className="cursor-pointer px-2 text-red-500">.</span><br/><span className="text-sm font-bold text-gray-500">(Look closely)</span></h1>
+                </div>
+              );
+              case 10: return (
+                <div className="flex items-center justify-center h-full relative overflow-hidden w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Make it night</div>
+                  <Draggable onDrag={(p) => { if (p.y > 300 || p.y < -100 || Math.abs(p.x) > 200) completeLevel(); }} className="absolute top-20"><div className="text-8xl">☀️</div></Draggable>
+                </div>
+              );
+              case 11: return (
+                <div className="flex flex-col items-center justify-center h-full w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Count the apples</div>
+                  <div className="relative w-64 h-24 mb-10 mt-10">
+                    <div className="absolute left-0 text-6xl">🍎</div>
+                    <div className="absolute left-1/2 -ml-8 text-6xl">🍎</div>
+                    <Draggable className="absolute left-1/2 -ml-8"><div className="text-6xl">🍎</div></Draggable>
+                    <div className="absolute right-0 text-6xl">🍎</div>
+                  </div>
+                  <div className="flex space-x-4 items-center">
+                    <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-20 text-center text-xl font-bold rounded-xl" />
+                    <button onClick={() => parseInt(inputValue) === 4 ? completeLevel() : setPopup({ title: "Wrong!", message: "Incorrect number."})} className="bg-green-400 border-4 border-black px-6 py-2 rounded-xl font-black">OK</button>
+                  </div>
+                </div>
+              );
+              case 12: return (
+                <div className="flex flex-col items-center justify-center h-full text-4xl font-black text-black w-full">
+                  <div className="absolute top-4 text-xl text-black">Make equation true</div>
+                  <div>1 + 2 = <span onClick={completeLevel} className="cursor-pointer text-blue-500">5</span></div>
+                </div>
+              );
+              case 13: return (
+                <div className="flex items-center justify-center h-full relative overflow-hidden w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Hide the elephant</div>
+                  <Draggable onDrag={(p) => { if (Math.abs(p.x) > 200 || Math.abs(p.y) > 300) completeLevel(); }}><div className="text-9xl">🐘</div></Draggable>
+                </div>
+              );
+              case 14: return (
+                <div className="flex flex-col items-center justify-center h-full w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Open the door</div>
+                  <Draggable onDragEnd={(p) => { if (p.x > 80) completeLevel(); return true; }}><div className="text-9xl border-l-4 border-black pl-2">🚪</div></Draggable>
+                </div>
+              );
+              case 15: return (
+                <div className="flex items-center justify-center h-full relative w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Make Green</div>
+                  {isGreen ? (
+                    <div className="w-20 h-20 bg-green-500 border-4 border-black rounded-full animate-bounce"></div>
+                  ) : (
+                    <>
+                      <Draggable onDragEnd={(p) => { if (p.x > 60 && p.x < 300) { setIsGreen(true); setTimeout(completeLevel, 1000); } return true; }} className="absolute left-16 z-10"><div className="w-16 h-16 bg-blue-500 border-4 border-black rounded-full opacity-80 mix-blend-multiply"></div></Draggable>
+                      <div className="w-16 h-16 bg-yellow-400 border-4 border-black rounded-full absolute right-16"></div>
+                    </>
+                  )}
+                </div>
+              );
               case 16: return (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <div className="absolute top-4 text-xl font-black">Wake up the cat</div>
+                <div className="flex flex-col items-center justify-center h-full w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Wake up the cat</div>
                   <div onClick={() => { setClicks(c => c + 1); if (clicks >= 4) completeLevel(); }} className="text-8xl cursor-pointer">{clicks >= 4 ? '🙀' : '😴'}</div>
                 </div>
               );
+              case 17: return (
+                <div className="flex flex-col items-center justify-center h-full space-y-8 w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Where is the coin?</div>
+                  <div className="flex space-x-10 text-6xl">
+                    <div onClick={() => setPopup({ title: "Empty!", message: "Nothing here."})} className="cursor-pointer">✋</div>
+                    <div onClick={() => setPopup({ title: "Empty!", message: "Nothing here."})} className="cursor-pointer">🤚</div>
+                  </div>
+                  <div onClick={completeLevel} className="w-24 h-24 bg-blue-500 rounded-b-3xl border-4 border-black cursor-pointer flex items-center justify-center text-white font-black text-sm mt-10">Pocket</div>
+                </div>
+              );
+              case 18: return (
+                <div className="flex items-center justify-center h-full relative w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Put out the fire</div>
+                  <Draggable onDragEnd={(p) => { if (p.x > 60 && p.x < 180) completeLevel(); return true; }} className="absolute left-10 top-20"><div className="text-6xl">🌧️</div></Draggable>
+                  <div className="absolute right-10 bottom-20 text-6xl">🔥</div>
+                </div>
+              );
+              case 19: return (
+                <div className="flex items-center justify-center h-full relative w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Catch the thief</div>
+                  <Draggable onDragEnd={(p) => { if (p.x > 100) completeLevel(); return true; }} className="absolute left-10"><div className="text-6xl">👮</div></Draggable>
+                  <div className="absolute right-10 text-6xl">🦹</div>
+                </div>
+              );
+              case 20: return (
+                <div className="flex flex-col items-center justify-center h-full relative w-full">
+                  <Draggable onDragEnd={(p) => { if (p.y > 100) completeLevel(); return true; }} className="absolute top-4 w-full flex justify-center"><div className="text-xl font-black text-black bg-white px-2 border-2 border-black rounded">Put the Giraffe in the fridge</div></Draggable>
+                  <div className="w-32 h-48 bg-gray-200 border-4 border-black rounded-xl flex flex-col items-center justify-center text-black font-black mt-20">
+                    <div className="w-full h-1/2 border-b-4 border-black flex items-center justify-center bg-gray-300 rounded-t-lg">Fridge</div>
+                    <div className="w-full h-1/2"></div>
+                  </div>
+                </div>
+              );
+              case 21: return (
+                <div className="flex flex-col items-center justify-center h-full w-full relative">
+                  <div className="absolute top-4 text-xl font-black text-black">Cross the river</div>
+                  <div className="w-full h-32 bg-blue-400 absolute bottom-10 border-y-4 border-black"></div>
+                  <Draggable onDragEnd={(p) => { if (p.x > 150) completeLevel(); return true; }} className="absolute left-4 bottom-20"><div className="text-6xl">⛵</div></Draggable>
+                  <div className="absolute right-4 bottom-16 text-4xl bg-white border-2 border-black rounded-full p-1">🏁</div>
+                </div>
+              );
+              case 22: return (
+                <div className="flex items-center justify-center h-full relative w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Turn on the fan</div>
+                  <div className="absolute right-8 top-1/2 -translate-y-1/2 w-10 h-16 bg-gray-200 border-4 border-black rounded flex flex-col justify-around items-center py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="w-3 h-3 bg-black rounded-full"></div><div className="w-3 h-3 bg-black rounded-full"></div>
+                  </div>
+                  <Draggable onDragEnd={(p) => { if (p.x > 120) setClicks(1); return true; }} className="absolute left-1/4 top-1/2 -translate-y-1/2"><div className="text-4xl">🔌</div></Draggable>
+                  <div onClick={() => { if (clicks === 1) completeLevel(); else setPopup({ title: "Oops!", message: "Nothing happened."}); }} className={`absolute bottom-10 text-6xl cursor-pointer ${clicks === 1 ? 'animate-spin' : ''}`}>🌀</div>
+                </div>
+              );
+              case 23: return (
+                <div className="flex flex-col items-center justify-center h-full relative w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Find the biggest number</div>
+                  <div className="grid grid-cols-2 gap-8 items-center justify-items-center mt-10">
+                    <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the biggest."})} className="text-8xl font-black cursor-pointer">12</div>
+                    <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the biggest."})} className="text-6xl font-black cursor-pointer">45</div>
+                    <div onClick={completeLevel} className="text-sm font-black cursor-pointer border-2 border-transparent hover:border-black rounded">99</div>
+                    <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the biggest."})} className="text-7xl font-black cursor-pointer">67</div>
+                  </div>
+                </div>
+              );
+              case 24: return (
+                <div className="flex flex-col items-center justify-center h-full relative w-full">
+                  <Draggable onDragEnd={(p) => { if (p.y > 150) completeLevel(); return true; }} className="absolute top-4 w-full flex justify-center"><div className="text-xl font-black text-black bg-yellow-200 px-2 border-4 border-black rounded">Finish the game</div></Draggable>
+                  <div className="absolute bottom-10 w-full border-t-8 border-dashed border-black flex justify-center pt-2 text-2xl font-black text-red-600">FINISH LINE</div>
+                </div>
+              );
               case 25: return (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <div className="absolute top-4 text-xl font-black">Unlock the safe (Hint: Level #)</div>
+                <div className="flex flex-col items-center justify-center h-full w-full">
+                  <div className="absolute top-4 text-xl font-black text-black">Unlock the safe (Hint: Level #)</div>
                   <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-2xl font-black rounded-xl" />
                   <button onClick={() => parseInt(inputValue) === 25 ? completeLevel() : setPopup({title:"Locked", message:"Wrong"})} className="mt-4 bg-yellow-400 border-4 border-black px-6 py-2 font-black">OPEN</button>
                 </div>
               );
-              default: return <div className="p-10 text-center font-bold">More Levels Coming Soon!</div>;
+              default: return null;
             }
           };
 
