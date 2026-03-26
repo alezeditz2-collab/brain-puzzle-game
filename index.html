@@ -68,14 +68,8 @@
           const [levelIndex, setLevelIndex] = useState(1);
           const [lastRewardTime, setLastRewardTime] = useState(Date.now());
           const [finaleClaimed, setFinaleClaimed] = useState(false);
-
-          // --- NETWORK STATE ---
           const [isOnline, setIsOnline] = useState(navigator.onLine);
-
-          // --- AD SYSTEM STATES ---
-          const [adInfo, setAdInfo] = useState({ show: false, type: null, timer: 0 });
           const [adsWatchedToday, setAdsWatchedToday] = useState(0);
-
           const [popup, setPopup] = useState(null); 
           const [hint, setHint] = useState("");
           const [isMuted, setIsMuted] = useState(false);
@@ -88,48 +82,32 @@
           const [isGreen, setIsGreen] = useState(false);
 
           const levelHints = {
-            1: "Move the yellow box away using your finger.",
-            2: "Think about real life size, not picture size.",
-            3: "Owls sleep during the day. Can you make the sun go down?",
-            4: "Look closely at the instruction text itself.",
-            5: "The clouds look fluffy. Maybe you can move them out of the way?",
-            6: "It says put 'everything' in the box. Does that include the instructions?",
-            7: "The button might try to trick you. Count carefully!",
-            8: "Drag the bone to the dog.",
-            9: "A period is a tiny circle. Look at the end of the sentence.",
-            10: "Make the sun disappear completely off the screen.",
-            11: "Maybe one apple is hiding behind another apple?",
-            12: "You can change the answer. Tap the number 5.",
-            13: "Look at the very first line of the logic. It tells you exactly what 1 equals.",
-            14: "Drag the door to the right to open it.",
-            15: "Blue and Yellow make Green. Drag the blue circle completely over the yellow one.",
-            16: "A shirt has a neck, a bottom, and two sleeves. A hole straight through adds 2 more holes for the front and 2 for the back.",
-            17: "The coin isn't in his hands. Try clicking his pocket.",
-            18: "Look very closely at the faces of the birds. One of them is not a duck.",
-            19: "Drag the police officer to the thief.",
-            20: "The fridge is too small for a real giraffe. Put the *word* giraffe inside.",
-            21: "Drag the boat to the other side of the screen.",
-            22: "There is a number hidden under the black square. Drag the square away to find it.",
-            23: "99 is the largest number, even if it looks visually small.",
-            24: "Drag the word 'game' to the finish line.",
+            1: "Move the yellow box away using your finger.", 2: "Think about real life size, not picture size.",
+            3: "Owls sleep during the day. Can you make the sun go down?", 4: "Look closely at the instruction text itself.",
+            5: "The clouds look fluffy. Maybe you can move them out of the way?", 6: "It says put 'everything' in the box. Does that include the instructions?",
+            7: "The button might try to trick you. Count carefully!", 8: "Drag the bone to the dog.",
+            9: "A period is a tiny circle. Look at the end of the sentence.", 10: "Make the sun disappear completely off the screen.",
+            11: "Maybe one apple is hiding behind another apple?", 12: "You can change the answer. Tap the number 5.",
+            13: "Look at the very first line of the logic. It tells you exactly what 1 equals.", 14: "Drag the door to the right to open it.",
+            15: "Blue and Yellow make Green. Drag the blue circle completely over the yellow one.", 16: "A shirt has a neck, a bottom, and two sleeves. A hole straight through adds 2 more holes for the front and 2 for the back.",
+            17: "The coin isn't in his hands. Try clicking his pocket.", 18: "Look very closely at the faces of the birds. One of them is not a duck.",
+            19: "Drag the police officer to the thief.", 20: "The fridge is too small for a real giraffe. Put the *word* giraffe inside.",
+            21: "Drag the boat to the other side of the screen.", 22: "There is a number hidden under the black square. Drag the square away to find it.",
+            23: "99 is the largest number, even if it looks visually small.", 24: "Drag the word 'game' to the finish line.",
             25: "Look at the level number at the top of your screen."
           };
 
-          // --- NETWORK MONITOR ---
           useEffect(() => {
             const handleOnline = () => setIsOnline(true);
             const handleOffline = () => setIsOnline(false);
-
             window.addEventListener('online', handleOnline);
             window.addEventListener('offline', handleOffline);
-
             return () => {
               window.removeEventListener('online', handleOnline);
               window.removeEventListener('offline', handleOffline);
             };
           }, []);
 
-          // --- AUDIO LOGIC ---
           useEffect(() => {
             bgmRef.current = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
             bgmRef.current.loop = true;
@@ -145,6 +123,17 @@
             }
           }, [isMuted, scene, isOnline]);
 
+          // --- AD REWARD LISTENER ---
+          useEffect(() => {
+            const handleReward = () => {
+              setKeys(prev => prev + 2);
+              setAdsWatchedToday(prev => prev + 1);
+              setPopup({ title: "Reward Claimed!", message: "You received 2 keys." });
+            };
+            window.addEventListener('adRewardReceived', handleReward);
+            return () => window.removeEventListener('adRewardReceived', handleReward);
+          }, []);
+
           const playWinSound = () => {
             if (isMuted) return;
             try {
@@ -152,31 +141,24 @@
               const ctx = new AudioContext();
               const osc = ctx.createOscillator();
               const gain = ctx.createGain();
-              
               osc.type = 'triangle'; 
               osc.frequency.setValueAtTime(523.25, ctx.currentTime); 
               osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
               osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2); 
-              
               gain.gain.setValueAtTime(0.2, ctx.currentTime);
               gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-              
               osc.connect(gain);
               gain.connect(ctx.destination);
               osc.start();
               osc.stop(ctx.currentTime + 0.5);
-            } catch (e) {
-              console.log("Audio API not supported.");
-            }
+            } catch (e) { console.log("Audio API not supported."); }
           };
 
-          // --- LOAD SAVED DATA ---
           useEffect(() => {
             const savedKeys = localStorage.getItem('puzzle_keys');
             const savedLevel = localStorage.getItem('puzzle_level');
             const savedTime = localStorage.getItem('puzzle_reward_time');
             const savedFinale = localStorage.getItem('puzzle_finale_claimed');
-            
             const savedAdsCount = localStorage.getItem('puzzle_ads_watched');
             const savedAdDate = localStorage.getItem('puzzle_ads_date');
             const todayStr = new Date().toDateString(); 
@@ -184,7 +166,6 @@
             if (savedKeys) setKeys(parseInt(savedKeys));
             if (savedLevel) setLevelIndex(parseInt(savedLevel));
             if (savedFinale === 'true') setFinaleClaimed(true);
-            
             if (savedAdDate === todayStr) {
               if (savedAdsCount) setAdsWatchedToday(parseInt(savedAdsCount));
             } else {
@@ -192,7 +173,6 @@
               localStorage.setItem('puzzle_ads_date', todayStr);
               localStorage.setItem('puzzle_ads_watched', '0');
             }
-
             let lastTime = Date.now();
             if (savedTime) {
               lastTime = parseInt(savedTime);
@@ -203,7 +183,6 @@
             checkDailyReward(lastTime);
           }, []);
 
-          // --- SAVE DATA ---
           useEffect(() => {
             localStorage.setItem('puzzle_keys', keys.toString());
             localStorage.setItem('puzzle_level', levelIndex.toString());
@@ -227,559 +206,13 @@
               setKeys(prev => prev - 1);
               setHint(levelHints[levelIndex] || "No hint available.");
             } else {
-              setPopup({ title: "No Keys!", message: "You do not have enough keys for a hint. Watch an ad to get more!" });
+              setPopup({ title: "No Keys!", message: "You do not have enough keys. Watch an ad to get more!" });
             }
           };
 
           const completeLevel = () => {
             playWinSound(); 
-            setHint(""); 
-            setClicks(0);
-            setInputValue("");
-            setIsNight(false);
-            setIsGreen(false);
-            if (levelIndex >= 25) {
-              if (!finaleClaimed) {
-                setPopup({ title: "Congratulations!", message: "Congrats you completed all stages! Rewards: 10 keys. Next update & stages are coming soon!" });
-                setKeys(prev => prev + 10);
-                setFinaleClaimed(true);
-                localStorage.setItem('puzzle_finale_claimed', 'true');
-              } else {
-                setPopup({ title: "Game Completed!", message: "You already claimed the final reward. Restarting the game from the beginning!" });
-              }
-              setLevelIndex(1); 
-              setScene('menu'); 
-              return;
-            }
-
-            setLevelIndex(prev => prev + 1);
-            if (levelIndex > 5) displayAd('interstitial');
-          };
-
-          // --- AD SYSTEM LOGIC ---
-          const displayAd = (type) => {
-            if (type === 'rewarded' && adsWatchedToday >= 5) {
-              setPopup({ title: "Daily Limit Reached", message: "You have watched 5 ads today. Come back tomorrow for more keys!" });
-              return;
-            }
-
-            setAdInfo({ show: true, type: type, timer: 3 });
-            const interval = setInterval(() => {
-              setAdInfo(prev => {
-                if (prev.timer <= 1) {
-                  clearInterval(interval);
-                  return { ...prev, timer: 0 };
-                }
-                return { ...prev, timer: prev.timer - 1 };
-              });
-            }, 1000);
-          };
-
-          const handleCloseAd = () => {
-            if (adInfo.type === 'rewarded') {
-              setKeys(prev => prev + 2);
-              setAdsWatchedToday(prev => prev + 1);
-              setPopup({ title: "Reward Claimed!", message: "You received 2 keys." });
-            }
-            setAdInfo({ show: false, type: null, timer: 0 });
-          };
-
-          const renderCurrentLevel = () => {
-            switch (levelIndex) {
-              case 1: 
-                return (
-                  <>
-                    <div className="absolute text-center top-4 w-full text-black font-black text-xl pointer-events-none">Find the cat!</div>
-                    <div onClick={completeLevel} className="absolute w-24 h-24 bg-orange-200 border-4 border-black rounded-full flex items-center justify-center text-4xl cursor-pointer z-0 top-1/2 left-1/2 -mt-12 -ml-12">🐱</div>
-                  
-                    <Draggable className="z-10 top-1/2 left-1/2 -mt-16 -ml-16">
-                      <div className="w-32 h-32 bg-yellow-400 border-4 border-black rounded-xl flex items-center justify-center text-black font-black text-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">BOX</div>
-                    </Draggable>
-                  </>
-                );
-              case 2: 
-                return (
-                  <div className="flex flex-col items-center justify-start h-full pt-4 w-full">
-                    <div className="text-center w-full text-black font-black text-xl mb-10">Which is the biggest?</div>
-                    <div className="flex justify-around w-full px-4 items-end space-x-4">
-                      <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the correct answer."})} className="text-6xl cursor-pointer hover:scale-110">🍎</div>
-            
-                      <div onClick={completeLevel} className="text-3xl cursor-pointer hover:scale-110">🍉</div>
-                      <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the correct answer."})} className="text-8xl cursor-pointer hover:scale-110">🍓</div>
-                    </div>
-                  </div>
-                );
-              case 3: 
-                return (
-                  <div className={`w-full h-full flex items-center justify-center transition-colors duration-1000 ${isNight ? 'bg-gray-800' : 'bg-transparent'}`}>
-                    <div className={`absolute text-center top-4 w-full font-black text-xl pointer-events-none ${isNight ? 'text-white' : 'text-black'}`}>Wake up the owl</div>
-                    <Draggable onDrag={(pos) => setIsNight(pos.y > 150)} className="absolute top-16 right-10 z-10"><div className="text-6xl">☀️</div></Draggable>
-                    <div onClick={() => isNight ? completeLevel() 
-        : setPopup({ title: "Nope!", message: "Nothing happened."})} className="absolute bottom-16 text-6xl cursor-pointer">{isNight ? '🦉' : '💤'}</div>
-                  </div>
-                );
-              case 4: 
-                return (
-                  <div className="flex flex-col items-center justify-start h-full pt-4 w-full">
-                    <div className="text-center w-full text-black font-bold text-xl mb-10">Find the <span onClick={completeLevel} className="text-black font-black cursor-pointer underline">darkest color</span> on screen!</div>
-                    <div className="flex justify-around w-full px-4 mt-8">
-                      <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the darkest color."})} 
-        className="w-16 h-16 bg-blue-800 border-4 border-black rounded-full cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"></div>
-                      <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the darkest color."})} className="w-16 h-16 bg-gray-800 border-4 border-black rounded-full cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"></div>
-                    </div>
-                  </div>
-                );
-              case 5: 
-                return (
-                  <div className="w-full h-full relative">
-                    <div className="absolute text-center top-4 w-full text-black font-black text-xl pointer-events-none">Find the hidden star</div>
-                    <div onClick={completeLevel} className="absolute text-5xl cursor-pointer z-0 top-1/2 left-1/2 -mt-6 -ml-6">⭐</div>
-                    <Draggable className="absolute z-10 top-1/2 left-1/2 -mt-12 -ml-16"><div className="text-8xl drop-shadow-md">☁️</div></Draggable>
-                    
-        <Draggable className="absolute z-10 top-1/2 left-1/2 -mt-10 -ml-8"><div className="text-8xl drop-shadow-md">☁️</div></Draggable>
-                  </div>
-                );
-              case 6: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full w-full relative">
-                    <Draggable onDragEnd={(p) => p.y > 100 && setClicks(prev => prev + 1)} className="absolute top-4 z-20 w-full flex justify-center"><div className="text-xl font-black text-black bg-white px-2 border-2 border-black rounded">Put everything in the box</div></Draggable>
-                    <div className="absolute bottom-10 w-32 h-32 border-4 border-dashed border-black bg-gray-100 rounded-xl flex items-center justify-center text-black font-black z-0">{clicks >= 3 ? 
-        completeLevel() : 'BOX'}</div>
-                    <Draggable onDragEnd={(p) => p.y > 100 && setClicks(prev => prev + 1)} className="absolute top-20 left-10 z-10"><div className="text-4xl">🍎</div></Draggable>
-                    <Draggable onDragEnd={(p) => p.y > 100 && setClicks(prev => prev + 1)} className="absolute top-20 right-10 z-10"><div className="text-4xl">🍌</div></Draggable>
-                  </div>
-                );
-              case 7: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full w-full">
-                    <div className="absolute text-center top-4 w-full text-black font-black text-xl pointer-events-none">Tap button 5 times</div>
-                    <div className="text-5xl font-black mb-8">{clicks}</div>
-                    <button 
-                      onClick={() => { setClicks(c => c + 1); 
-        if (clicks === 4) completeLevel(); }} 
-                      className={`px-10 py-4 font-black text-2xl rounded-2xl border-4 border-black transition-all ${clicks === 3 ? 'bg-red-500 text-white scale-75 ml-24 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-cyan-400 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1'}`}
-                    >
-                      TAP ME
-                    </button>
-                  </div>
-                );
-              case 8: 
-                return (
-                  <div className="flex items-center justify-center h-full relative w-full">
-                    <div className="absolute top-4 text-xl font-black text-black">Feed the dog</div>
-                    <Draggable onDragEnd={(p) => { if (p.x > 80) completeLevel(); return true; }} className="absolute left-10"><div className="text-5xl drop-shadow-md">🦴</div></Draggable>
-                    <div className="absolute right-10 text-6xl">🐕</div>
-                  </div>
-          
-                );
-              case 9: 
-                return (
-                  <div className="flex items-center justify-center h-full w-full">
-                    <h1 className="text-2xl font-black text-black text-center">Find the circle<span onClick={completeLevel} className="cursor-pointer px-2 text-red-500">.</span><br/><span className="text-sm font-bold text-gray-500">(Look closely)</span></h1>
-                  </div>
-                );
-              case 10: 
-                return (
-                  <div className="flex items-center justify-center h-full relative overflow-hidden w-full">
-                    <div className="absolute top-4 text-xl font-black text-black">Make it night</div>
-                    <Draggable onDrag={(p) => { if (p.y > 300 || p.y < -100 || Math.abs(p.x) > 200) completeLevel(); }} className="absolute top-20"><div className="text-8xl">☀️</div></Draggable>
-                  </div>
-                );
-              case 11: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full w-full">
-                    <div className="absolute top-4 text-xl font-black text-black">Count the apples</div>
-                    <div className="relative w-64 h-24 mb-10 mt-10 mx-auto">
-                      <div className="absolute left-0 text-6xl">🍎</div>
-                      <div className="absolute left-1/2 -ml-8 text-6xl 
-        z-0">🍎</div>
-                      <Draggable className="absolute left-1/2 -ml-8 z-10"><div className="text-6xl cursor-pointer">🍎</div></Draggable>
-                      <div className="absolute right-0 text-6xl">🍎</div>
-                    </div>
-                    <div className="flex space-x-4 items-center">
-                      <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-20 text-center text-xl font-bold rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] outline-none bg-gray-100" />
-             
-                      <button onClick={() => parseInt(inputValue) === 4 ?
-        completeLevel() : setPopup({ title: "Wrong!", message: "Incorrect number."})} className="bg-green-400 text-black border-4 border-black px-6 py-2 rounded-xl font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1">OK</button>
-                    </div>
-                  </div>
-                );
-              case 12: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full text-4xl font-black text-black w-full">
-                    <div className="absolute top-4 text-xl text-black">Make equation true</div>
-                    <div>1 + 2 = <span onClick={completeLevel} className="cursor-pointer text-blue-500 hover:text-blue-700">5</span></div>
-                  </div>
-                );
-              // NEW LEVEL 13: Numerical Logic Puzzle
-              case 13: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full w-full">
-                    <div className="absolute top-4 text-xl font-black text-black">Solve the logic</div>
-                    <div className="text-3xl font-bold flex flex-col items-center mt-6 space-y-4">
-                      <div>1 = 5</div>
-               
-                      <div>2 = 15</div>
-                      <div>3 = 215</div>
-                      <div>4 = 3215</div>
-                      <div>5 = <span className="text-gray-400">?</span></div>
-                    </div>
-                    <div className="flex space-x-4 items-center mt-10">
-                      
-        <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-xl font-bold rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] outline-none bg-gray-100" placeholder="?" />
-                      <button onClick={() => inputValue === "1" ? completeLevel() : setPopup({ title: "Wrong!", message: "That is incorrect. Look at the patterns carefully."})} className="bg-green-400 text-black border-4 border-black px-6 py-2 rounded-xl font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1">OK</button>
-                    </div>
-                  </div>
-                );
-
-              case 14: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full w-full">
-         
-                    <div className="absolute top-4 text-xl font-black text-black">Open the door</div>
-                    <Draggable onDragEnd={(p) => { if (p.x > 80) completeLevel(); return true; }} className="z-10"><div className="text-9xl border-l-4 border-black pl-2">🚪</div></Draggable>
-                  </div>
-                );
-              case 15: 
-                return (
-                  <div className="flex items-center justify-center h-full relative w-full">
-           
-                    <div className="absolute top-4 text-xl font-black text-black">Make Green</div>
-                    {isGreen ? (
-                      <div className="w-20 h-20 bg-green-500 border-4 border-black rounded-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-bounce"></div>
-                    ) : (
-                      <>
-                        <Draggable 
-            
-                          className="absolute left-16 z-10"
-                          onDragEnd={(p) => { 
-                            if (p.x > 60 && p.x < 300) { 
-                              setIsGreen(true);
-        setTimeout(completeLevel, 1000); 
-                            } 
-                            return true;
-        }} 
-                        >
-                          <div className="w-16 h-16 bg-blue-500 border-4 border-black rounded-full opacity-80 mix-blend-multiply cursor-grab active:cursor-grabbing"></div>
-                        </Draggable>
-                        <div className="w-16 h-16 bg-yellow-400 border-4 border-black rounded-full absolute right-16 z-0"></div>
-                      
-        </>
-                    )}
-                  </div>
-                );
-              // NEW LEVEL 16: Numerical / Trick Question
-              case 16: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full w-full">
-                    <div className="absolute top-4 text-xl font-black text-black">How many holes in this shirt?</div>
-                    <div className="relative mt-8">
-                      <div className="text-9xl relative z-10">👕</div>
-               
-                      {/* Fake holes layered over the shirt emoji */}
-                      <div className="w-8 h-8 bg-gray-200 border-2 border-gray-400 rounded-full absolute top-12 left-10 z-20"></div>
-                      <div className="w-8 h-8 bg-gray-300 rounded-full absolute top-12 left-10 z-0 shadow-inner"></div>
-                    </div>
-                    <div className="flex space-x-4 items-center mt-12">
-                  
-                     <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-xl font-bold rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] outline-none bg-gray-100" placeholder="?" />
-                      <button onClick={() => inputValue === "8" ?
-        completeLevel() : setPopup({ title: "Wrong!", message: "Incorrect. Count every single opening."})} className="bg-green-400 text-black border-4 border-black px-6 py-2 rounded-xl font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1">OK</button>
-                    </div>
-                  </div>
-                );
-              case 17: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full space-y-8 w-full">
-                    <div className="absolute top-4 text-xl font-black text-black">Where is the coin?</div>
-                    <div className="flex space-x-10 text-6xl">
-                      <div onClick={() => setPopup({ title: "Empty!", message: "Nothing here."})} className="cursor-pointer drop-shadow-md">✋</div>
-                     
-                      <div onClick={() => setPopup({ title: "Empty!", message: "Nothing here."})} className="cursor-pointer drop-shadow-md">🤚</div>
-                    </div>
-                    <div onClick={completeLevel} className="w-24 h-24 bg-blue-500 rounded-b-3xl border-4 border-black cursor-pointer flex items-center justify-center text-white font-black text-sm mt-10 shadow-inner">Pocket</div>
-                  </div>
-                );
-              // NEW LEVEL 18: Attention / Observation
-              case 18: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full w-full">
-                    <div className="absolute top-4 text-xl font-black text-black">Count the ducks</div>
-                    <div className="flex flex-wrap justify-center gap-6 px-4 mt-10">
-                      <div className="text-5xl drop-shadow-sm">🦆</div><div className="text-5xl drop-shadow-sm">🦆</div><div className="text-5xl drop-shadow-sm">🦆</div>
-            
-                      <div className="text-5xl drop-shadow-sm">🐥</div><div className="text-5xl drop-shadow-sm">🦆</div><div className="text-5xl drop-shadow-sm">🦆</div>
-                    </div>
-                    <div className="flex space-x-4 items-center mt-12">
-                      <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-xl font-bold rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] outline-none bg-gray-100" placeholder="?" />
-                      <button onClick={() => parseInt(inputValue) === 5 ?
-        completeLevel() : setPopup({ title: "Wrong!", message: "That is not the correct number."})} className="bg-green-400 text-black border-4 border-black px-6 py-2 rounded-xl font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1">OK</button>
-                    </div>
-                  </div>
-                );
-              case 19: 
-                return (
-                  <div className="flex items-center justify-center h-full relative w-full">
-                    <div className="absolute top-4 text-xl font-black text-black">Catch the thief</div>
-                    <Draggable onDragEnd={(p) => { if (p.x > 100) completeLevel(); return true; }} className="absolute left-10 z-10"><div className="text-6xl drop-shadow-md">👮</div></Draggable>
-                    <div className="absolute right-10 text-6xl">🦹</div>
-                  </div>
-         
-                );
-              case 20: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full relative w-full">
-                    <Draggable onDragEnd={(p) => { if (p.y > 100) completeLevel(); return true; }} className="absolute top-4 z-20 w-full flex justify-center"><div className="text-xl font-black text-black bg-white px-2 cursor-pointer border-2 border-black rounded">Put the Giraffe in the fridge</div></Draggable>
-                    <div className="w-32 h-48 bg-gray-200 border-4 border-black rounded-xl flex flex-col 
-        items-center justify-center text-black font-black mt-20 z-0 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                      <div className="w-full h-1/2 border-b-4 border-black flex items-center justify-center bg-gray-300 rounded-t-lg">Fridge</div>
-                      <div className="w-full h-1/2"></div>
-                    </div>
-                  </div>
-                );
-              case 21: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full w-full relative">
-                    <div className="absolute top-4 text-xl font-black text-black">Cross the river</div>
-                    <div className="w-full h-32 bg-blue-400 absolute bottom-10 z-0 border-y-4 border-black"></div>
-                    <Draggable onDragEnd={(p) => { if (p.x > 150) completeLevel(); return true; }} className="absolute left-4 bottom-20 z-10"><div className="text-6xl drop-shadow-lg">⛵</div></Draggable>
-            
-                    <div className="absolute right-4 bottom-16 text-4xl bg-white border-2 border-black rounded-full p-1">🏁</div>
-                  </div>
-                );
-              // NEW LEVEL 22: Draggable Hide/Seek Number Puzzle
-              case 22: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full w-full relative">
-                    <div className="absolute top-4 text-xl font-black text-black">Find the secret code</div>
-                    <div className="relative mt-10 w-48 h-24 flex items-center justify-center bg-gray-200 border-4 border-black rounded overflow-hidden">
-                      <span 
-        className="text-4xl font-black text-gray-500">8082</span>
-                      <Draggable className="absolute inset-0 z-10">
-                        {/* The "darkness" covering the code */}
-                        <div className="w-full h-full bg-gray-900 cursor-grab active:cursor-grabbing"></div>
-                      </Draggable>
-                    </div>
-                    
-        <div className="flex space-x-4 items-center mt-12">
-                      <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-xl font-bold rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] outline-none bg-gray-100" placeholder="***" />
-                      <button onClick={() => inputValue === "8082" ?
-        completeLevel() : setPopup({ title: "Wrong!", message: "Incorrect code."})} className="bg-green-400 text-black border-4 border-black px-6 py-2 rounded-xl font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1">OK</button>
-                    </div>
-                  </div>
-                );
-              case 23: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full relative w-full">
-                    <div className="absolute top-4 text-xl font-black text-black">Find the biggest number</div>
-                    <div className="grid grid-cols-2 gap-8 items-center justify-items-center mt-10">
-                      <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the biggest."})} className="text-8xl font-black cursor-pointer">12</div>
-              
-                      <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the biggest."})} className="text-6xl font-black cursor-pointer">45</div>
-                      <div onClick={completeLevel} className="text-sm font-black cursor-pointer hover:bg-yellow-200 p-2 border-2 border-transparent hover:border-black rounded">99</div>
-                      <div onClick={() => setPopup({ title: "Wrong!", message: "That is not the biggest."})} className="text-7xl font-black cursor-pointer">67</div>
-                    </div>
-                  </div>
-            
-                );
-              case 24: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full relative w-full">
-                    <Draggable onDragEnd={(p) => { if (p.y > 150) completeLevel(); return true; }} className="absolute top-4 z-20 w-full flex justify-center"><div className="text-xl font-black text-black bg-yellow-200 px-2 cursor-pointer border-4 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">Finish the game</div></Draggable>
-                    <div className="absolute bottom-10 w-full border-t-8 border-dashed border-black flex justify-center pt-2 text-2xl font-black z-0 text-red-600">FINISH 
-        LINE</div>
-                  </div>
-                );
-              case 25: 
-                return (
-                  <div className="flex flex-col items-center justify-center h-full w-full relative px-4">
-                    <div className="absolute top-4 text-xl font-black text-black">Unlock the safe to win!</div>
-                    
-                    <div className="text-9xl mb-6">🗄️</div>
-                    
-                    
-        <div className="flex space-x-2 w-full justify-center mt-4">
-                      <input 
-                        type="number" 
-                        value={inputValue} 
-                        onChange={(e) => setInputValue(e.target.value)} 
-                        className="border-4 border-black p-2 w-24 text-center text-2xl font-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] outline-none bg-gray-100" 
-        
-                        placeholder="***" 
-                      />
-                      <button 
-                        onClick={() => {
-                          if (parseInt(inputValue) === 25) {
-                      
-                            completeLevel(); 
-                          } else {
-                            setPopup({ title: "Locked!", message: "Incorrect password." });
-        }
-                        }} 
-                        className="bg-yellow-400 text-black border-4 border-black px-6 py-2 rounded-xl font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1"
-                      >
-                        OPEN
-                      </button>
-                    </div>
-         
-                  </div>
-                );
-              default:
-                return <div>Error loading level</div>;
-            }
-          };
-
-          return (
-            <div className="flex justify-center w-full min-h-screen bg-gray-200 sm:p-4 select-none" style={{ fontFamily: '"Comic Sans MS", "Varela Round", "Nunito", sans-serif' }}>
-              <div className="w-full max-w-md bg-white sm:rounded-3xl sm:shadow-2xl overflow-hidden relative border-x-4 sm:border-4 border-black h-screen sm:h-[85vh]">
-                
-                {/* --- NO INTERNET BLOCKER --- */}
-                {!isOnline && (
-                  <div className="absolute inset-0 bg-gray-900 bg-opacity-95 z-[100] flex flex-col items-center justify-center p-6 text-center">
-               
-                     <div className="text-8xl mb-4">📶</div>
-                    <h2 className="text-3xl font-black text-white mb-2 tracking-widest">NO INTERNET</h2>
-                    <p className="text-white font-bold mb-8 text-lg">You must connect to the internet to play this game.</p>
-                    <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                )}
-
-                {scene === 'menu' ? (
-         
-                  <div className="flex flex-col items-center justify-center h-full space-y-8 bg-white relative">
-                    
-                    <button 
-                      onClick={() => setIsMuted(!isMuted)} 
-                      className="absolute top-4 right-4 text-2xl p-2 bg-gray-100 border-4 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1"
-                    >
-            
-                      {isMuted ? '🔇' : '🔊'}
-                    </button>
-
-                    <h1 className="text-5xl font-black text-black tracking-tighter drop-shadow-md text-center">BRAIN<br/>PUZZLE</h1>
-                    
-                    <button 
-                      onClick={() => {
-                        setScene('game');
-        if (!isMuted && bgmRef.current && isOnline) bgmRef.current.play().catch(e => console.log(e));
-                      }} 
-                      className="px-10 py-4 bg-yellow-400 border-4 border-black text-black text-2xl font-black rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1 transition-all"
-                    >
-                      PLAY LEVEL {levelIndex > 25 ? 25 : levelIndex}
-                    </button>
-
-                    <button 
-                      onClick={() => displayAd('rewarded')}
-                      className="px-6 py-2 bg-blue-300 border-4 border-black text-black text-lg font-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1 transition-all flex items-center space-x-2"
-                    >
-                      <span>📺 Watch Ad (+2 🔑)</span>
-                    </button>
-                    <span className="text-xs font-bold text-gray-500 -mt-6">({5 - adsWatchedToday} left today)</span>
-
-                    <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-xl font-bold border-4 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mt-4">
-                      <span className="text-xl">🔑</span><span className="text-xl text-black">{keys} Keys</span>
-                    </div>
-                    
-                  </div>
-                ) : (
-                  <div className="flex flex-col h-full w-full bg-white">
-                    <div className="flex justify-between items-center p-4 border-b-4 border-black bg-white z-50">
-                      <button 
-                        onClick={() => { setScene('menu');
-        setHint(""); }} 
-                        className="text-black font-bold px-3 py-1 bg-white rounded border-4 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1"
-                      >
-                        ← Menu
-                      </button>
-                      
-                     
-                      <span className="font-black text-xl text-black">Lv.{levelIndex}</span>
-                      
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          onClick={() => setIsMuted(!isMuted)} 
-                          className="text-xl bg-gray-100 border-4 border-black rounded-full px-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1"
-         
-                        >
-                          {isMuted ? '🔇' : '🔊'}
-                        </button>
-
-                        <button 
-                          onClick={handleHintClick} 
-                          className="flex items-center space-x-1 bg-yellow-400 text-black px-3 py-1 rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-4 border-black active:shadow-none active:translate-y-1"
-                        
-        >
-                          <span className="font-black border-r-4 border-black pr-2 mr-1">Hint</span>
-                          <span className="font-bold">{keys} 🔑</span>
-                        </button>
-                      </div>
-                    </div>
-                    
-           
-                    <div className="w-full flex justify-end px-4 mt-2 z-40">
-                      <button 
-                        onClick={() => displayAd('rewarded')}
-                        className="bg-blue-300 border-2 border-black rounded px-2 py-1 text-xs font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1 relative"
-                      >
-                   
-                        📺 +2 🔑 ({5 - adsWatchedToday}/5)
-                      </button>
-                    </div>
-                    
-                    {hint && (
-                      <div className="mx-4 mt-2 p-4 bg-white text-black border-4 border-black rounded-xl text-center font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50">
-                    
-            💡 {hint}
-                      </div>
-                    )}
-                    
-                    <div key={levelIndex} className="flex-1 relative overflow-hidden bg-white text-black">
-                      {renderCurrentLevel()}
-                    </div>
-                  </div>
-           
-              )}
-
-                {adInfo.show && (
-                  <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center text-white">
-                    <h2 className="text-2xl font-bold mb-4">
-                      {adInfo.type === 'rewarded' ? 'Rewarded Video Ad' : 'Interstitial Ad'}
-                    </h2>
-                    <p className="text-gray-400 mb-8">(Simulated Advertisement)</p>
-                    {adInfo.timer > 0 ?
-        (
-                      <span className="text-gray-500 font-bold">Close in {adInfo.timer}s...</span>
-                    ) : (
-                      <button onClick={handleCloseAd} className="px-8 py-3 bg-white text-black font-bold rounded-full active:scale-95 border-4 border-gray-500">Close Ad</button>
-                    )}
-                  </div>
-                )}
-
-                {popup && (
-           
-               <div className="absolute inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white p-6 rounded-2xl text-center w-full max-w-sm border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                      <h3 className="text-2xl font-black text-black mb-2">{popup.title}</h3>
-                      <p className="text-black mb-6 font-bold">{popup.message}</p>
-                      <button onClick={() => setPopup(null)} className="w-full py-4 bg-yellow-400 text-black font-black rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none 
-        active:translate-y-1 transition-transform">OK</button>
-                    </div>
-                  </div>
-                )}
-
-              </div>
-            </div>
-          );
-        }
-          // --- UPDATED COMPLETE LEVEL LOGIC ---
-          const completeLevel = () => {
-            playWinSound(); 
-            setHint(""); 
-            setClicks(0);
-            setInputValue("");
-            setIsNight(false);
-            setIsGreen(false);
-
+            setHint(""); setClicks(0); setInputValue(""); setIsNight(false); setIsGreen(false);
             if (levelIndex >= 25) {
               if (!finaleClaimed) {
                 setPopup({ title: "Congratulations!", message: "Congrats you completed all stages! Rewards: 10 keys." });
@@ -787,47 +220,118 @@
                 setFinaleClaimed(true);
                 localStorage.setItem('puzzle_finale_claimed', 'true');
               }
-              setLevelIndex(1); 
-              setScene('menu'); 
-              return;
+              setLevelIndex(1); setScene('menu'); return;
             }
-
-            // Logic to trigger Ads after winning Level 6 or higher
-            if (levelIndex >= 6) {
-                showAppCreatorAd();
-            }
-
-            setLevelIndex(prev => prev + 1);
+            const nextLevel = levelIndex + 1;
+            setLevelIndex(nextLevel);
+            // Trigger interstitial starting after level 5
+            if (nextLevel > 5) displayAd('interstitial');
           };
 
-          // --- UPDATED AD BRIDGE FOR APPCREATOR24 ---
-          const showAppCreatorAd = () => {
-            // Check if the AppCreator24 bridge exists
-            if (typeof parent.showInterstital !== 'undefined') {
-                parent.showInterstital(); // Standard AppCreator24 function
-            } else if (typeof showInterstital !== 'undefined') {
-                showInterstital();
-            } else {
-                // Fallback for browser testing (the simulated ad)
-                displayAd('interstitial');
-                console.log("AppCreator24 bridge not detected. Showing simulated ad.");
-            }
-          };
-
+          // --- UPDATED AD SYSTEM (REAL APP) ---
           const displayAd = (type) => {
-            // ... (keep your existing simulated displayAd code here for testing)
-            setAdInfo({ show: true, type: type, timer: 3 });
-            const interval = setInterval(() => {
-              setAdInfo(prev => {
-                if (prev.timer <= 1) {
-                  clearInterval(interval);
-                  return { ...prev, timer: 0 };
-                }
-                return { ...prev, timer: prev.timer - 1 };
-              });
-            }, 1000);
+            if (type === 'rewarded') {
+              if (adsWatchedToday >= 5) {
+                setPopup({ title: "Daily Limit", message: "You have reached your limit for today!" });
+                return;
+              }
+              if (typeof showVideoReward === "function") {
+                showVideoReward(); 
+              } else {
+                setPopup({ title: "Notice", message: "Ads are only available in the mobile app." });
+              }
+            } else {
+              if (typeof showInterstitial === "function") {
+                showInterstitial();
+              }
+            }
           };
-        
+
+          const renderCurrentLevel = () => {
+            switch (levelIndex) {
+              case 1: return ( <> <div className="absolute text-center top-4 w-full text-black font-black text-xl pointer-events-none">Find the cat!</div> <div onClick={completeLevel} className="absolute w-24 h-24 bg-orange-200 border-4 border-black rounded-full flex items-center justify-center text-4xl cursor-pointer z-0 top-1/2 left-1/2 -mt-12 -ml-12">🐱</div> <Draggable className="z-10 top-1/2 left-1/2 -mt-16 -ml-16"> <div className="w-32 h-32 bg-yellow-400 border-4 border-black rounded-xl flex items-center justify-center text-black font-black text-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">BOX</div> </Draggable> </> );
+              case 2: return ( <div className="flex flex-col items-center justify-start h-full pt-4 w-full"> <div className="text-center w-full text-black font-black text-xl mb-10">Which is the biggest?</div> <div className="flex justify-around w-full px-4 items-end space-x-4"> <div onClick={() => setPopup({ title: "Wrong!", message: "Try again."})} className="text-6xl cursor-pointer">🍎</div> <div onClick={completeLevel} className="text-3xl cursor-pointer"> watermelon 🍉</div> <div onClick={() => setPopup({ title: "Wrong!", message: "Try again."})} className="text-8xl cursor-pointer">🍓</div> </div> </div> );
+              case 3: return ( <div className={`w-full h-full flex items-center justify-center transition-colors duration-1000 ${isNight ? 'bg-gray-800' : 'bg-transparent'}`}> <div className={`absolute text-center top-4 w-full font-black text-xl pointer-events-none ${isNight ? 'text-white' : 'text-black'}`}>Wake up the owl</div> <Draggable onDrag={(pos) => setIsNight(pos.y > 150)} className="absolute top-16 right-10 z-10"><div className="text-6xl">☀️</div></Draggable> <div onClick={() => isNight ? completeLevel() : setPopup({ title: "Nope!", message: "Make it night first."})} className="absolute bottom-16 text-6xl cursor-pointer">{isNight ? '🦉' : '💤'}</div> </div> );
+              case 4: return ( <div className="flex flex-col items-center justify-start h-full pt-4 w-full"> <div className="text-center w-full text-black font-bold text-xl mb-10">Find the <span onClick={completeLevel} className="text-black font-black cursor-pointer underline">darkest color</span> on screen!</div> <div className="flex justify-around w-full px-4 mt-8"> <div className="w-16 h-16 bg-blue-800 border-4 border-black rounded-full cursor-pointer"></div> <div className="w-16 h-16 bg-gray-800 border-4 border-black rounded-full cursor-pointer"></div> </div> </div> );
+              case 5: return ( <div className="w-full h-full relative"> <div className="absolute text-center top-4 w-full text-black font-black text-xl pointer-events-none">Find the hidden star</div> <div onClick={completeLevel} className="absolute text-5xl cursor-pointer z-0 top-1/2 left-1/2 -mt-6 -ml-6">⭐</div> <Draggable className="absolute z-10 top-1/2 left-1/2 -mt-12 -ml-16"><div className="text-8xl">☁️</div></Draggable> <Draggable className="absolute z-10 top-1/2 left-1/2 -mt-10 -ml-8"><div className="text-8xl">☁️</div></Draggable> </div> );
+              case 6: return ( <div className="flex flex-col items-center justify-center h-full w-full relative"> <Draggable onDragEnd={(p) => p.y > 100 && setClicks(prev => prev + 1)} className="absolute top-4 z-20 w-full flex justify-center"><div className="text-xl font-black text-black bg-white px-2 border-2 border-black rounded">Put everything in the box</div></Draggable> <div className="absolute bottom-10 w-32 h-32 border-4 border-dashed border-black bg-gray-100 rounded-xl flex items-center justify-center text-black font-black z-0">{clicks >= 3 ? completeLevel() : 'BOX'}</div> <Draggable onDragEnd={(p) => p.y > 100 && setClicks(prev => prev + 1)} className="absolute top-20 left-10 z-10"><div className="text-4xl">🍎</div></Draggable> <Draggable onDragEnd={(p) => p.y > 100 && setClicks(prev => prev + 1)} className="absolute top-20 right-10 z-10"><div className="text-4xl">🍌</div></Draggable> </div> );
+              case 7: return ( <div className="flex flex-col items-center justify-center h-full w-full"> <div className="text-5xl font-black mb-8">{clicks}</div> <button onClick={() => { setClicks(c => c + 1); if (clicks === 4) completeLevel(); }} className={`px-10 py-4 font-black text-2xl rounded-2xl border-4 border-black ${clicks === 3 ? 'bg-red-500 ml-24' : 'bg-cyan-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'}`}> TAP ME </button> </div> );
+              case 8: return ( <div className="flex items-center justify-center h-full relative w-full"> <div className="absolute top-4 text-xl font-black text-black">Feed the dog</div> <Draggable onDragEnd={(p) => { if (p.x > 80) completeLevel(); return true; }} className="absolute left-10"><div className="text-5xl">🦴</div></Draggable> <div className="absolute right-10 text-6xl">🐕</div> </div> );
+              case 9: return ( <div className="flex items-center justify-center h-full w-full"> <h1 className="text-2xl font-black text-black text-center">Find the circle<span onClick={completeLevel} className="cursor-pointer text-red-500">.</span></h1> </div> );
+              case 10: return ( <div className="flex items-center justify-center h-full relative overflow-hidden w-full"> <Draggable onDrag={(p) => { if (p.y > 300 || p.y < -100 || Math.abs(p.x) > 200) completeLevel(); }} className="absolute top-20"><div className="text-8xl">☀️</div></Draggable> </div> );
+              case 11: return ( <div className="flex flex-col items-center justify-center h-full w-full"> <div className="relative w-64 h-24 mb-10 mt-10 mx-auto"> <div className="absolute left-0 text-6xl">🍎</div> <div className="absolute left-1/2 -ml-8 text-6xl">🍎</div> <Draggable className="absolute left-1/2 -ml-8 z-10"><div className="text-6xl">🍎</div></Draggable> <div className="absolute right-0 text-6xl">🍎</div> </div> <div className="flex space-x-4 items-center"> <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-20 text-center text-xl font-bold rounded-xl" /> <button onClick={() => parseInt(inputValue) === 4 ? completeLevel() : setPopup({ title: "Wrong!", message: "Count again."})} className="bg-green-400 text-black border-4 border-black px-6 py-2 rounded-xl font-black">OK</button> </div> </div> );
+              case 12: return ( <div className="flex flex-col items-center justify-center h-full text-4xl font-black text-black w-full"> <div>1 + 2 = <span onClick={completeLevel} className="cursor-pointer text-blue-500">5</span></div> </div> );
+              case 13: return ( <div className="flex flex-col items-center justify-center h-full w-full"> <div className="text-3xl font-bold flex flex-col items-center space-y-4"> <div>1 = 5</div> <div>2 = 15</div> <div>3 = 215</div> <div>4 = 3215</div> <div>5 = ?</div> </div> <div className="flex space-x-4 items-center mt-10"> <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-xl font-bold rounded-xl" /> <button onClick={() => inputValue === "1" ? completeLevel() : setPopup({ title: "Wrong!", message: "Look at the first line."})} className="bg-green-400 border-4 border-black px-6 py-2 rounded-xl font-black">OK</button> </div> </div> );
+              case 14: return ( <div className="flex items-center justify-center h-full w-full"> <Draggable onDragEnd={(p) => { if (p.x > 80) completeLevel(); return true; }} className="z-10"><div className="text-9xl border-l-4 border-black pl-2">🚪</div></Draggable> </div> );
+              case 15: return ( <div className="flex items-center justify-center h-full relative w-full"> {isGreen ? ( <div className="w-20 h-20 bg-green-500 border-4 border-black rounded-full animate-bounce"></div> ) : ( <> <Draggable className="absolute left-16 z-10" onDragEnd={(p) => { if (p.x > 60 && p.x < 300) { setIsGreen(true); setTimeout(completeLevel, 1000); } return true; }}> <div className="w-16 h-16 bg-blue-500 border-4 border-black rounded-full opacity-80 mix-blend-multiply"></div> </Draggable> <div className="w-16 h-16 bg-yellow-400 border-4 border-black rounded-full absolute right-16 z-0"></div> </> )} </div> );
+              case 16: return ( <div className="flex flex-col items-center justify-center h-full w-full"> <div className="text-9xl relative z-10">👕</div> <div className="flex space-x-4 items-center mt-12"> <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-xl font-bold rounded-xl" /> <button onClick={() => inputValue === "8" ? completeLevel() : setPopup({ title: "Wrong!", message: "Count the neck, sleeves, bottom, and front/back holes."})} className="bg-green-400 border-4 border-black px-6 py-2 rounded-xl font-black">OK</button> </div> </div> );
+              case 17: return ( <div className="flex flex-col items-center justify-center h-full space-y-8 w-full"> <div className="flex space-x-10 text-6xl"> <div>✋</div> <div>🤚</div> </div> <div onClick={completeLevel} className="w-24 h-24 bg-blue-500 rounded-b-3xl border-4 border-black cursor-pointer flex items-center justify-center text-white font-black text-sm">Pocket</div> </div> );
+              case 18: return ( <div className="flex flex-col items-center justify-center h-full w-full"> <div className="flex flex-wrap justify-center gap-6 mt-10"> <div className="text-5xl">🦆</div><div className="text-5xl">🦆</div><div className="text-5xl">🦆</div> <div className="text-5xl">🐥</div><div className="text-5xl">🦆</div><div className="text-5xl">🦆</div> </div> <div className="flex space-x-4 items-center mt-12"> <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-xl font-bold rounded-xl" /> <button onClick={() => parseInt(inputValue) === 5 ? completeLevel() : setPopup({ title: "Wrong!", message: "One is not a duck."})} className="bg-green-400 border-4 border-black px-6 py-2 rounded-xl font-black">OK</button> </div> </div> );
+              case 19: return ( <div className="flex items-center justify-center h-full relative w-full"> <Draggable onDragEnd={(p) => { if (p.x > 100) completeLevel(); return true; }} className="absolute left-10 z-10"><div className="text-6xl">👮</div></Draggable> <div className="absolute right-10 text-6xl">🦹</div> </div> );
+              case 20: return ( <div className="flex flex-col items-center justify-center h-full relative w-full"> <Draggable onDragEnd={(p) => { if (p.y > 100) completeLevel(); return true; }} className="absolute top-4 z-20 w-full flex justify-center"><div className="text-xl font-black text-black bg-white px-2 border-2 border-black rounded">Put the Giraffe in the fridge</div></Draggable> <div className="w-32 h-48 bg-gray-200 border-4 border-black rounded-xl flex flex-col items-center justify-center text-black font-black mt-20 z-0"> <div className="w-full h-1/2 border-b-4 border-black flex items-center justify-center bg-gray-300">Fridge</div> <div className="w-full h-1/2"></div> </div> </div> );
+              case 21: return ( <div className="flex flex-col items-center justify-center h-full w-full relative"> <div className="w-full h-32 bg-blue-400 absolute bottom-10 z-0 border-y-4 border-black"></div> <Draggable onDragEnd={(p) => { if (p.x > 150) completeLevel(); return true; }} className="absolute left-4 bottom-20 z-10"><div className="text-6xl">⛵</div></Draggable> <div className="absolute right-4 bottom-16 text-4xl bg-white border-2 border-black rounded-full p-1">🏁</div> </div> );
+              case 22: return ( <div className="flex flex-col items-center justify-center h-full w-full relative"> <div className="relative mt-10 w-48 h-24 flex items-center justify-center bg-gray-200 border-4 border-black rounded overflow-hidden"> <span className="text-4xl font-black text-gray-500">8082</span> <Draggable className="absolute inset-0 z-10"> <div className="w-full h-full bg-gray-900"></div> </Draggable> </div> <div className="flex space-x-4 items-center mt-12"> <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-xl font-bold rounded-xl" /> <button onClick={() => inputValue === "8082" ? completeLevel() : setPopup({ title: "Wrong!", message: "Find the code."})} className="bg-green-400 border-4 border-black px-6 py-2 rounded-xl font-black">OK</button> </div> </div> );
+              case 23: return ( <div className="flex flex-col items-center justify-center h-full relative w-full"> <div className="grid grid-cols-2 gap-8 items-center justify-items-center mt-10"> <div className="text-8xl font-black">12</div> <div className="text-6xl font-black">45</div> <div onClick={completeLevel} className="text-sm font-black p-2 border-2 border-transparent hover:border-black">99</div> <div className="text-7xl font-black">67</div> </div> </div> );
+              case 24: return ( <div className="flex flex-col items-center justify-center h-full relative w-full"> <Draggable onDragEnd={(p) => { if (p.y > 150) completeLevel(); return true; }} className="absolute top-4 z-20 w-full flex justify-center"><div className="text-xl font-black text-black bg-yellow-200 px-2 border-4 border-black rounded">Finish the game</div></Draggable> <div className="absolute bottom-10 w-full border-t-8 border-dashed border-black flex justify-center pt-2 text-2xl font-black z-0 text-red-600">FINISH LINE</div> </div> );
+              case 25: return ( <div className="flex flex-col items-center justify-center h-full w-full relative px-4"> <div className="text-9xl mb-6">🗄️</div> <div className="flex space-x-2 w-full justify-center mt-4"> <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-2xl font-black rounded-xl" /> <button onClick={() => { if (parseInt(inputValue) === 25) { completeLevel(); } else { setPopup({ title: "Locked!", message: "Password is the level number." }); } }} className="bg-yellow-400 border-4 border-black px-6 py-2 rounded-xl font-black">OPEN</button> </div> </div> );
+              default: return <div>Error loading level</div>;
+            }
+          };
+
+          return (
+            <div className="flex justify-center w-full min-h-screen bg-gray-200 select-none" style={{ fontFamily: '"Comic Sans MS", sans-serif' }}>
+              <div className="w-full max-w-md bg-white border-x-4 border-black h-screen relative">
+                {!isOnline && (
+                  <div className="absolute inset-0 bg-gray-900 z-[100] flex flex-col items-center justify-center p-6 text-center">
+                    <h2 className="text-3xl font-black text-white mb-2">NO INTERNET</h2>
+                    <p className="text-white font-bold mb-8">Connection required to play.</p>
+                  </div>
+                )}
+                {scene === 'menu' ? (
+                  <div className="flex flex-col items-center justify-center h-full space-y-8 bg-white">
+                    <button onClick={() => setIsMuted(!isMuted)} className="absolute top-4 right-4 text-2xl p-2 bg-gray-100 border-4 border-black rounded-full"> {isMuted ? '🔇' : '🔊'} </button>
+                    <h1 className="text-5xl font-black text-black text-center">BRAIN<br/>PUZZLE</h1>
+                    <button onClick={() => { setScene('game'); if (!isMuted && bgmRef.current && isOnline) bgmRef.current.play().catch(e => console.log(e)); }} className="px-10 py-4 bg-yellow-400 border-4 border-black text-black text-2xl font-black rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1"> PLAY LEVEL {levelIndex > 25 ? 25 : levelIndex} </button>
+                    <button onClick={() => displayAd('rewarded')} className="px-6 py-2 bg-blue-300 border-4 border-black text-black text-lg font-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center space-x-2"> <span>📺 Watch Ad (+2 🔑)</span> </button>
+                    <span className="text-xs font-bold text-gray-500 -mt-6">({5 - adsWatchedToday} left today)</span>
+                    <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-xl font-bold border-4 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"> <span className="text-xl">🔑</span><span className="text-xl text-black">{keys} Keys</span> </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col h-full w-full bg-white">
+                    <div className="flex justify-between items-center p-4 border-b-4 border-black bg-white z-50">
+                      <button onClick={() => { setScene('menu'); setHint(""); }} className="text-black font-bold px-3 py-1 border-4 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"> ← Menu </button>
+                      <span className="font-black text-xl text-black">Lv.{levelIndex}</span>
+                      <div className="flex items-center space-x-2">
+                        <button onClick={() => setIsMuted(!isMuted)} className="text-xl bg-gray-100 border-4 border-black rounded-full px-2"> {isMuted ? '🔇' : '🔊'} </button>
+                        <button onClick={handleHintClick} className="flex items-center space-x-1 bg-yellow-400 px-3 py-1 rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-4 border-black"> <span className="font-black border-r-4 border-black pr-2 mr-1">Hint</span> <span className="font-bold">{keys} 🔑</span> </button>
+                      </div>
+                    </div>
+                    <div className="w-full flex justify-end px-4 mt-2 z-40">
+                      <button onClick={() => displayAd('rewarded')} className="bg-blue-300 border-2 border-black rounded px-2 py-1 text-xs font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"> 📺 +2 🔑 ({5 - adsWatchedToday}/5) </button>
+                    </div>
+                    {hint && ( <div className="mx-4 mt-2 p-4 bg-white border-4 border-black rounded-xl text-center font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50"> 💡 {hint} </div> )}
+                    <div key={levelIndex} className="flex-1 relative overflow-hidden bg-white text-black"> {renderCurrentLevel()} </div>
+                  </div>
+                )}
+                {popup && (
+                  <div className="absolute inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white p-6 rounded-2xl text-center w-full max-w-sm border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                      <h3 className="text-2xl font-black text-black mb-2">{popup.title}</h3>
+                      <p className="text-black mb-6 font-bold">{popup.message}</p>
+                      <button onClick={() => setPopup(null)} className="w-full py-4 bg-yellow-400 text-black font-black rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">OK</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        // --- APPCREATOR24 REWARD CALLBACK ---
+        window.onVideoRewardFinished = function() {
+          window.dispatchEvent(new CustomEvent('adRewardReceived'));
+        };
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
