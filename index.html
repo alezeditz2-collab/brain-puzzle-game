@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Brain Puzzle</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #f3f4f6; }
+        #root { height: 100vh; width: 100vw; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- FIXED Draggable Component ---
+        const Draggable = ({ children, onDrag, onDragEnd, style, className, id, resetOnDrop }) => {
+          const [pos, setPos] = useState({ x: 0, y: 0 });
+          const [isDragging, setIsDragging] = useState(false);
+          const startPos = useRef({ x: 0, y: 0 });
+
+          const handlePointerDown = (e) => {
+            setIsDragging(true);
+            startPos.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+            e.target.setPointerCapture(e.pointerId);
+          };
+
+          const handlePointerMove = (e) => {
+            if (!isDragging) return;
+            const newX = e.clientX - startPos.current.x;
+            const newY = e.clientY - startPos.current.y;
+            setPos({ x: newX, y: newY });
+            if (onDrag) onDrag({ x: newX, y: newY }, id);
+          };
+
+          const handlePointerUp = (e) => {
+            setIsDragging(false);
+            if (onDragEnd) {
+              const success = onDragEnd(pos, id);
+              if (resetOnDrop && !success) setPos({ x: 0, y: 0 });
+            }
+          };
+
+          return (
+            <div
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              className={`absolute cursor-grab active:cursor-grabbing ${className || ''}`}
+              style={{ transform: `translate(${pos.x}px, ${pos.y}px)`, touchAction: 'none', ...style }}
+            >
+              {children}
+            </div>
+          );
+        };
+
+        // --- Main App Component ---
+        function App() {
+          const [scene, setScene] = useState('menu'); 
+          const [keys, setKeys] = useState(5);
+          const [levelIndex, setLevelIndex] = useState(1);
+          const [lastRewardTime, setLastRewardTime] = useState(Date.now());
+          const [isOnline, setIsOnline] = useState(navigator.onLine);
+          const [adInfo, setAdInfo] = useState({ show: false, type: null, timer: 0 });
+          const [adsWatchedToday, setAdsWatchedToday] = useState(0);
+          const [popup, setPopup] = useState(null); 
+          const [hint, setHint] = useState("");
+          const [isMuted, setIsMuted] = useState(false);
+          const [clicks, setClicks] = useState(0);
+          const [inputValue, setInputValue] = useState("");
+          const [isNight, setIsNight] = useState(false);
+          const [isGreen, setIsGreen] = useState(false);
+
+          const levelHints = {
+            1: "Move the yellow box away using your finger.",
+            16: "Wake the cat up by tapping it multiple times.",
+            25: "Look at the level number at the top of your screen."
+          };
+
+          const completeLevel = () => {
+            setHint(""); setClicks(0); setInputValue(""); setIsNight(false); setIsGreen(false);
+            if (levelIndex >= 25) {
+              setPopup({ title: "Winner!", message: "All levels cleared!" });
+              setLevelIndex(1); setScene('menu'); return;
+            }
+            setLevelIndex(prev => prev + 1);
+          };
+
+          const handleCloseAd = () => {
+            if (adInfo.type === 'rewarded') { setKeys(k => k + 2); setAdsWatchedToday(a => a + 1); }
+            setAdInfo({ show: false, type: null, timer: 0 });
+          };
+
+          const renderCurrentLevel = () => {
+            switch (levelIndex) {
+              case 1: return (
+                <>
+                  <div className="absolute top-4 w-full text-center font-black text-xl">Find the cat!</div>
+                  <div onClick={completeLevel} className="absolute top-1/2 left-1/2 -mt-12 -ml-12 text-6xl cursor-pointer">🐱</div>
+                  <Draggable className="top-1/2 left-1/2 -mt-16 -ml-16"><div className="w-32 h-32 bg-yellow-400 border-4 border-black rounded-xl flex items-center justify-center font-black">BOX</div></Draggable>
+                </>
+              );
+              case 16: return (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div className="absolute top-4 text-xl font-black">Wake up the cat</div>
+                  <div onClick={() => { setClicks(c => c + 1); if (clicks >= 4) completeLevel(); }} className="text-8xl cursor-pointer">{clicks >= 4 ? '🙀' : '😴'}</div>
+                </div>
+              );
+              case 25: return (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div className="absolute top-4 text-xl font-black">Unlock the safe (Hint: Level #)</div>
+                  <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="border-4 border-black p-2 w-24 text-center text-2xl font-black rounded-xl" />
+                  <button onClick={() => parseInt(inputValue) === 25 ? completeLevel() : setPopup({title:"Locked", message:"Wrong"})} className="mt-4 bg-yellow-400 border-4 border-black px-6 py-2 font-black">OPEN</button>
+                </div>
+              );
+              default: return <div className="p-10 text-center font-bold">More Levels Coming Soon!</div>;
+            }
+          };
+
+          return (
+            <div className="h-full w-full bg-white relative font-sans overflow-hidden">
+              {scene === 'menu' ? (
+                <div className="flex flex-col items-center justify-center h-full space-y-8">
+                  <h1 className="text-5xl font-black">BRAIN PUZZLE</h1>
+                  <button onClick={() => setScene('game')} className="px-10 py-4 bg-yellow-400 border-4 border-black text-2xl font-black rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">PLAY</button>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col">
+                  <div className="p-4 border-b-4 border-black flex justify-between items-center bg-white z-50">
+                    <button onClick={() => setScene('menu')} className="font-bold border-4 border-black px-2">← Menu</button>
+                    <span className="font-black text-xl">Lv.{levelIndex}</span>
+                    <button onClick={() => setHint(levelHints[levelIndex] || "Tap stuff!")} className="bg-yellow-400 border-4 border-black px-2 font-black">Hint</button>
+                  </div>
+                  {hint && <div className="p-2 bg-yellow-100 text-center font-bold border-b-2 border-black">💡 {hint}</div>}
+                  <div className="flex-1 relative">{renderCurrentLevel()}</div>
+                </div>
+              )}
+              {popup && (
+                <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]">
+                  <div className="bg-white p-6 rounded-2xl border-4 border-black text-center">
+                    <h3 className="text-2xl font-black">{popup.title}</h3>
+                    <p className="font-bold">{popup.message}</p>
+                    <button onClick={() => setPopup(null)} className="mt-4 w-full py-2 bg-yellow-400 border-4 border-black font-black">OK</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
